@@ -214,10 +214,10 @@ async def init():
             pass
 
     @app.on_message(filters.private & ~filters.edited)
-async def incoming_private(_, message):
-    user_id = message.from_user.id
-    if await mongo.is_banned_user(user_id):
-        return
+    async def incoming_private(_, message):
+        user_id = message.from_user.id
+        if await mongo.is_banned_user(user_id):
+            return
         if user_id in SUDO_USERS:
             if message.reply_to_message:
                 if (
