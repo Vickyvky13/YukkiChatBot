@@ -166,9 +166,10 @@ async def init():
             return await message.reply_text(
                 "MONGO_DB_URI var not defined. Please define it first"
             )
+        
         if message.reply_to_message:
-            x = message.reply_to_message.message_id
-            y = message.chat.id
+            reply_message_id = message.reply_to_message.message_id
+            chat_id = message.chat.id
         else:
             if len(message.command) < 2:
                 return await message.reply_text(
@@ -181,13 +182,12 @@ async def init():
         susers = await mongo.get_served_users()
         for user in susers:
             served_users.append(int(user["user_id"]))
-        for i in served_users:
+        for user_id in served_users:
             try:
-                await app.forward_messages(
-                    i, y, x
-                ) if message.reply_to_message else await app.send_message(
-                    i, text=query
-                )
+                if message.reply_to_message:
+                    await app.forward_messages(user_id, chat_id, reply_message_id)
+                else:
+                    await app.send_message(user_id, text=query)
                 susr += 1
             except FloodWait as e:
                 flood_time = int(e.x)
@@ -196,10 +196,9 @@ async def init():
                 await asyncio.sleep(flood_time)
             except Exception:
                 pass
+
         try:
-            await message.reply_text(
-                f"**Broadcasted Message to {susr} Users.**"
-            )
+            await message.reply_text(f"**Broadcasted Message to {susr} Users.**")
         except:
             pass
 
@@ -272,7 +271,7 @@ async def init():
                 or message.text == "/broadcast"
             ):
                 return
-            replied_id = message.reply_to_message_id
+            replied_id = message.reply_to_message.message_id
             if not message.reply_to_message.forward_sender_name:
                 return await message.reply_text(
                     "Please reply to forwarded messages only."
@@ -302,4 +301,4 @@ async def init():
 
 if __name__ == "__main__":
     loop.run_until_complete(init())
-    
+            
