@@ -213,62 +213,69 @@ async def init():
         except:
             pass
 
-    @app.on_message(filters.private & ~filters.edited)
-    async def incoming_private(_, message):
-        user_id = message.from_user.id
-        if await mongo.is_banned_user(user_id):
-            return
-        if user_id in SUDO_USERS:
-            if message.reply_to_message:
-                if (
-                    message.text == "/unblock"
-                    or message.text == "/block"
-                    or message.text == "/broadcast"
-                ):
-                    return
-                if not message.reply_to_message.forward_sender_name:
-                    return await message.reply_text(
-                        "Please reply to forwarded messages only."
-                    )
-                replied_id = message.reply_to_message_id
-                try:
-                    replied_user_id = save[replied_id]
-                except Exception as e:
-                    print(e)
-                    return await message.reply_text(
-                        "Failed to fetch user. You might've restarted bot or some error happened. Please check logs"
-                    )
-                try:
-                    return await app.copy_message(
-                        replied_user_id,
-                        message.chat.id,
-                        message.message_id,
-                    )
-                except Exception as e:
-                    print(e)
-                    return await message.reply_text(
-                        "Failed to send the message, User might have blocked the bot or something wrong happened. Please check logs"
-                    )
+
+    @app.on_message(filters.private)
+async def incoming_private(_, message):
+    user_id = message.from_user.id
+    if await mongo.is_banned_user(user_id):
+        return
+    if user_id in SUDO_USERS:
+        if message.reply_to_message:
+            if (
+                message.text == "/unblock"
+                or message.text == "/block"
+                or message.text == "/broadcast"
+            ):
+                return
+            if not message.reply_to_message.forward_sender_name:
+                return await message.reply_text(
+                    "Please reply to forwarded messages only."
+                )
+            replied_id = message.reply_to_message_id
+            try:
+                replied_user_id = save[replied_id]
+            except Exception as e:
+                print(e)
+                return await message.reply_text(
+                    "Failed to fetch user. You might've restarted bot or some error happened. Please check logs"
+                )
+            try:
+                return await app.copy_message(
+                    replied_user_id,
+                    message.chat.id,
+                    message.message_id,
+                )
+            except Exception as e:
+                print(e)
+                return await message.reply_text(
+                    "Failed to send the message, User might have blocked the bot or something wrong happened. Please check logs"
+                )
+    else:
+        if await mongo.is_group():
+            try:
+                forwarded = await app.forward_messages(
+                    config.LOG_GROUP_ID,
+                    message.chat.id,
+                    message.message_id,
+                )
+                save[forwarded.message_id] = user_id
+            except:
+                pass
         else:
-            if await mongo.is_group():
+            for user in SUDO_USERS:
                 try:
                     forwarded = await app.forward_messages(
-                        config.LOG_GROUP_ID,
-                        message.chat.id,
-                        message.message_id,
+                        user, message.chat.id, message.message_id
                     )
                     save[forwarded.message_id] = user_id
                 except:
                     pass
-            else:
-                for user in SUDO_USERS:
-                    try:
-                        forwarded = await app.forward_messages(
-                            user, message.chat.id, message.message_id
-                        )
-                        save[forwarded.message_id] = user_id
-                    except:
-                        pass
+
+@app.on_edited_message(filters.private)
+async def edited_private(_, edited_message):
+    # Handle edited private messages here
+    pass
+    
 
     @app.on_message(
         filters.group & ~filters.edited & filters.user(SUDO_USERS),
