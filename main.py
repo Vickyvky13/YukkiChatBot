@@ -271,11 +271,11 @@ async def incoming_private(_, message):
                 except:
                     pass
 
+
 @app.on_edited_message(filters.private)
 async def edited_private(_, edited_message):
     # Handle edited private messages here
     pass
-    
 
     @app.on_message(
         filters.group & ~filters.edited & filters.user(SUDO_USERS),
