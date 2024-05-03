@@ -213,16 +213,11 @@ async def init():
         except:
             pass
 
-    @app.on_message(filters.private)
+    @app.on_message(filters.private & ~filters.edited)
 async def incoming_private(_, message):
     user_id = message.from_user.id
-    if message.edit_date is not None:
-        # Message is edited
-        return
     if await mongo.is_banned_user(user_id):
         return
-    # Process the message
-
         if user_id in SUDO_USERS:
             if message.reply_to_message:
                 if (
